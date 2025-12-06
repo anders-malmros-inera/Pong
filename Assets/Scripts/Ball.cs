@@ -3,8 +3,14 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D))]
 public class Ball : MonoBehaviour
 {
-    public float speed = 8f;
+    public float speed = 6f;
     Rigidbody2D rb;
+    // maximum bounce angle (degrees) from the horizontal when hitting a paddle
+    public float maxBounceAngle = 75f;
+    // Enable collision debug logs when true
+    public bool debugCollisions = false;
+    // Minimum horizontal velocity as fraction of total speed to avoid near-vertical bounces
+    public float minHorizontalRatio = 0.25f;
 
     void Awake()
     {
@@ -28,28 +34,73 @@ public class Ball : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D collision)
     {
-        // increase speed slightly on paddle hit
+        // unified collision handling
+        if (collision.contactCount == 0) return;
+        var contact = collision.GetContact(0);
+
+        // Paddle hit: compute outgoing angle based on hit position
         if (collision.gameObject.CompareTag("Paddle"))
         {
-            // Reflect the velocity by the contact normal to ensure a proper bounce
-            if (collision.contactCount > 0)
+            if (debugCollisions) Debug.Log($"Ball hit Paddle at point {contact.point}, paddle {collision.transform.name}");
+            var paddle = collision.transform;
+            var paddleCollider = collision.collider as Collider2D;
+
+            float paddleHeight = 1f;
+            if (paddleCollider != null) paddleHeight = paddleCollider.bounds.size.y;
+            float relativeY = (contact.point.y - paddle.position.y) / (paddleHeight / 2f);
+            relativeY = Mathf.Clamp(relativeY, -1f, 1f);
+
+            float bounceAngle = relativeY * maxBounceAngle * Mathf.Deg2Rad;
+            float dirX = (paddle.position.x < 0f) ? 1f : -1f;
+            Vector2 outDir = new Vector2(Mathf.Cos(bounceAngle) * dirX, Mathf.Sin(bounceAngle)).normalized;
+
+            float inSpeed = rb.linearVelocity.magnitude;
+            float newSpeed = Mathf.Max(inSpeed * 1.05f, speed * 0.5f);
+
+            Vector2 proposed = outDir * newSpeed;
+            float minHx = Mathf.Abs(minHorizontalRatio * newSpeed);
+            float vx = proposed.x;
+            float vy = proposed.y;
+            if (Mathf.Abs(vx) < minHx)
             {
-                var contact = collision.GetContact(0);
-                Vector2 inVel = rb.linearVelocity;
-                if (inVel.magnitude < 0.01f)
-                {
-                    // fallback: if velocity is effectively zero, nudge away from paddle
-                    inVel = new Vector2(transform.position.x < collision.transform.position.x ? -1f : 1f, 0f);
-                }
-                Vector2 reflected = Vector2.Reflect(inVel.normalized, contact.normal);
-                float newSpeed = Mathf.Max(inVel.magnitude * 1.05f, speed * 0.5f);
-                rb.linearVelocity = reflected * newSpeed;
+                float signX = (vx != 0f) ? Mathf.Sign(vx) : (paddle.position.x < 0f ? 1f : -1f);
+                vx = signX * minHx;
+                float rest = Mathf.Max(0f, newSpeed * newSpeed - vx * vx);
+                vy = Mathf.Sign(vy) * Mathf.Sqrt(rest);
             }
-            else
+            rb.linearVelocity = new Vector2(vx, vy);
+            return;
+        }
+
+        // Non-paddle: reflect by contact normal
+        if (debugCollisions) Debug.Log($"Ball hit {collision.gameObject.name} normal={contact.normal} incomingVel={rb.linearVelocity}");
+        Vector2 inVel = rb.linearVelocity;
+        if (inVel.magnitude < 0.01f) inVel = new Vector2((Random.value > 0.5f) ? 1f : -1f, 0f) * speed;
+        Vector2 reflected = Vector2.Reflect(inVel.normalized, contact.normal);
+        float mag = inVel.magnitude;
+
+        if (collision.gameObject.CompareTag("Wall"))
+        {
+            // perfect mirror reflection for walls; increase speed slightly after bounce
+            mag *= 1.05f;
+            rb.linearVelocity = reflected * mag;
+        }
+        else
+        {
+            // for other objects keep safety clamp on horizontal and increase speed slightly
+            mag *= 1.05f;
+            Vector2 proposedRef = reflected * mag;
+            float minH = Mathf.Abs(minHorizontalRatio * mag);
+            float rvx = proposedRef.x;
+            float rvy = proposedRef.y;
+            if (Mathf.Abs(rvx) < minH)
             {
-                // no contact info; as a fallback, just slightly increase current velocity
-                rb.linearVelocity = rb.linearVelocity * 1.05f;
+                float signX = (rvx != 0f) ? Mathf.Sign(rvx) : ((transform.position.x >= 0f) ? -1f : 1f);
+                rvx = signX * minH;
+                float rest = Mathf.Max(0f, mag * mag - rvx * rvx);
+                rvy = Mathf.Sign(rvy) * Mathf.Sqrt(rest);
             }
+            rb.linearVelocity = new Vector2(rvx, rvy);
         }
     }
 

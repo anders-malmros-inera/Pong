@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D))]
 public class Paddle : MonoBehaviour
 {
-    public float speed = 8f;
+    public float speed = 6f;
     public bool isLeft = true; // left or right paddle
     public bool useAI = false; // simple AI following the ball
 

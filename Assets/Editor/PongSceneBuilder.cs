@@ -21,8 +21,40 @@ public class PongSceneBuilder
         camGO.transform.position = new Vector3(0f, 0f, -10f);
         camGO.tag = "MainCamera";
 
+        // Top and bottom walls so the ball bounces off the screen edges
+        // Use the camera orthographic size to place walls slightly inside the vertical bounds
+        float camHeight = cam.orthographicSize;
+        float inset = 0.25f; // place walls slightly inside so the ball remains visible when bouncing
+        float wallY = camHeight - inset;
+
+        // Top wall
+        var topWall = new GameObject("TopWall");
+        var topCol = topWall.AddComponent<BoxCollider2D>();
+        topCol.size = new Vector2(100f, 0.5f);
+        topWall.transform.position = new Vector3(0f, wallY, 0f);
+        var topRb = topWall.AddComponent<Rigidbody2D>();
+        topRb.bodyType = RigidbodyType2D.Static;
+        EnsureTagExists("Wall");
+        topWall.tag = "Wall";
+
+        // Bottom wall
+        var bottomWall = new GameObject("BottomWall");
+        var bottomCol = bottomWall.AddComponent<BoxCollider2D>();
+        bottomCol.size = new Vector2(100f, 0.5f);
+        bottomWall.transform.position = new Vector3(0f, -wallY, 0f);
+        var bottomRb = bottomWall.AddComponent<Rigidbody2D>();
+        bottomRb.bodyType = RigidbodyType2D.Static;
+        bottomWall.tag = "Wall";
+
         // Helper sprite (builtin UI sprite)
         Sprite sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+
+        // Playfield and paddle sizing (paddle height = 20% of playfield height)
+        float playfieldHeight = cam.orthographicSize * 2f;
+        float paddleHeight = playfieldHeight * 0.10f; // 10% of full playfield (half of previous 20%)
+        float paddleWidth = 0.5f;
+        float paddleVisualDepth = 0.5f;
+        float paddleZOffset = -0.5f; // slightly in front of 2D sprite (negative z towards camera)
 
         // Left Paddle
         var paddleLeft = new GameObject("PaddleLeft");
@@ -30,9 +62,10 @@ public class PongSceneBuilder
         srL.sprite = sprite;
         srL.color = Color.white;
         paddleLeft.transform.position = new Vector3(-8f, 0f, 0f);
-        // triple the paddle size
-        paddleLeft.transform.localScale = new Vector3(0.5f * 3f, 2f * 3f, 1f);
-        paddleLeft.AddComponent<BoxCollider2D>();
+        // Size paddles relative to playfield height
+        paddleLeft.transform.localScale = new Vector3(paddleWidth, paddleHeight, 1f);
+        var colL = paddleLeft.AddComponent<BoxCollider2D>();
+        colL.size = new Vector2(paddleWidth, paddleHeight);
         var rbL = paddleLeft.AddComponent<Rigidbody2D>();
         rbL.bodyType = RigidbodyType2D.Kinematic;
         rbL.freezeRotation = true;
@@ -40,6 +73,17 @@ public class PongSceneBuilder
         paddleScriptL.isLeft = true;
         EnsureTagExists("Paddle");
         paddleLeft.tag = "Paddle";
+        
+        // 3D visual for left paddle (cube) - child of physics object
+        var leftVis = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Object.DestroyImmediate(leftVis.GetComponent<Collider>());
+        leftVis.name = "PaddleLeft_Vis";
+        leftVis.transform.SetParent(paddleLeft.transform, false);
+        leftVis.transform.localPosition = new Vector3(0f, 0f, paddleZOffset);
+        leftVis.transform.localRotation = Quaternion.Euler(10f, 20f, 0f);
+        leftVis.transform.localScale = new Vector3(paddleWidth, paddleHeight, paddleVisualDepth);
+        var leftR = leftVis.GetComponent<MeshRenderer>();
+        if (leftR != null) leftR.material.color = Color.cyan;
 
         // Right Paddle
         var paddleRight = new GameObject("PaddleRight");
@@ -47,15 +91,27 @@ public class PongSceneBuilder
         srR.sprite = sprite;
         srR.color = Color.white;
         paddleRight.transform.position = new Vector3(8f, 0f, 0f);
-        // triple the paddle size
-        paddleRight.transform.localScale = new Vector3(0.5f * 3f, 2f * 3f, 1f);
-        paddleRight.AddComponent<BoxCollider2D>();
+        // Size paddles relative to playfield height
+        paddleRight.transform.localScale = new Vector3(paddleWidth, paddleHeight, 1f);
+        var colR = paddleRight.AddComponent<BoxCollider2D>();
+        colR.size = new Vector2(paddleWidth, paddleHeight);
         var rbR = paddleRight.AddComponent<Rigidbody2D>();
         rbR.bodyType = RigidbodyType2D.Kinematic;
         rbR.freezeRotation = true;
         var paddleScriptR = paddleRight.AddComponent<Paddle>();
         paddleScriptR.isLeft = false;
         paddleRight.tag = "Paddle";
+
+        // 3D visual for right paddle (cube)
+        var rightVis = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Object.DestroyImmediate(rightVis.GetComponent<Collider>());
+        rightVis.name = "PaddleRight_Vis";
+        rightVis.transform.SetParent(paddleRight.transform, false);
+        rightVis.transform.localPosition = new Vector3(0f, 0f, paddleZOffset);
+        rightVis.transform.localRotation = Quaternion.Euler(10f, -20f, 0f);
+        rightVis.transform.localScale = new Vector3(paddleWidth, paddleHeight, paddleVisualDepth);
+        var rightR = rightVis.GetComponent<MeshRenderer>();
+        if (rightR != null) rightR.material.color = Color.magenta;
 
         // Ball
         var ballGO = new GameObject("Ball");
@@ -69,6 +125,16 @@ public class PongSceneBuilder
         rbBall.gravityScale = 0f;
         rbBall.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         ballGO.AddComponent<Ball>();
+
+        // 3D visual for ball (sphere)
+        var ballVis = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        Object.DestroyImmediate(ballVis.GetComponent<Collider>());
+        ballVis.name = "Ball_Vis";
+        ballVis.transform.SetParent(ballGO.transform, false);
+        ballVis.transform.localPosition = new Vector3(0f, 0f, -0.25f);
+        ballVis.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
+        var ballR = ballVis.GetComponent<MeshRenderer>();
+        if (ballR != null) ballR.material.color = Color.white;
 
         // Goals
         var goalLeft = new GameObject("GoalLeft");
@@ -173,6 +239,55 @@ public class PongSceneBuilder
         uiManager.leftScoreText = leftText;
         uiManager.rightScoreText = rightText;
         uiManager.countdownText = countdownText;
+
+        // Draw visible playfield border using UI images so players see the active area
+        // Top border image
+        var topBorderGO = new GameObject("UI_TopBorder");
+        topBorderGO.transform.SetParent(canvasGO.transform);
+        var topImg = topBorderGO.AddComponent<UnityEngine.UI.Image>();
+        topImg.color = Color.white;
+        var topRT = topImg.GetComponent<RectTransform>();
+        topRT.anchorMin = new Vector2(0f, 1f);
+        topRT.anchorMax = new Vector2(1f, 1f);
+        topRT.pivot = new Vector2(0.5f, 1f);
+        topRT.anchoredPosition = Vector2.zero;
+        topRT.sizeDelta = new Vector2(0f, 6f);
+
+        // Bottom border image
+        var bottomBorderGO = new GameObject("UI_BottomBorder");
+        bottomBorderGO.transform.SetParent(canvasGO.transform);
+        var bottomImg = bottomBorderGO.AddComponent<UnityEngine.UI.Image>();
+        bottomImg.color = Color.white;
+        var bottomRT = bottomImg.GetComponent<RectTransform>();
+        bottomRT.anchorMin = new Vector2(0f, 0f);
+        bottomRT.anchorMax = new Vector2(1f, 0f);
+        bottomRT.pivot = new Vector2(0.5f, 0f);
+        bottomRT.anchoredPosition = Vector2.zero;
+        bottomRT.sizeDelta = new Vector2(0f, 6f);
+
+        // Left border image
+        var leftBorderGO = new GameObject("UI_LeftBorder");
+        leftBorderGO.transform.SetParent(canvasGO.transform);
+        var leftImg = leftBorderGO.AddComponent<UnityEngine.UI.Image>();
+        leftImg.color = Color.white;
+        var leftRT = leftImg.GetComponent<RectTransform>();
+        leftRT.anchorMin = new Vector2(0f, 0f);
+        leftRT.anchorMax = new Vector2(0f, 1f);
+        leftRT.pivot = new Vector2(0f, 0.5f);
+        leftRT.anchoredPosition = Vector2.zero;
+        leftRT.sizeDelta = new Vector2(6f, 0f);
+
+        // Right border image
+        var rightBorderGO = new GameObject("UI_RightBorder");
+        rightBorderGO.transform.SetParent(canvasGO.transform);
+        var rightImg = rightBorderGO.AddComponent<UnityEngine.UI.Image>();
+        rightImg.color = Color.white;
+        var rightRT = rightImg.GetComponent<RectTransform>();
+        rightRT.anchorMin = new Vector2(1f, 0f);
+        rightRT.anchorMax = new Vector2(1f, 1f);
+        rightRT.pivot = new Vector2(1f, 0.5f);
+        rightRT.anchoredPosition = Vector2.zero;
+        rightRT.sizeDelta = new Vector2(6f, 0f);
 
         // Winner texts (hidden initially)
         var winnerLeftGO = new GameObject("WinnerLeftText");
