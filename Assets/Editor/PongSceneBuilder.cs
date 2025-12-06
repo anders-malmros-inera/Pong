@@ -30,7 +30,8 @@ public class PongSceneBuilder
         srL.sprite = sprite;
         srL.color = Color.white;
         paddleLeft.transform.position = new Vector3(-8f, 0f, 0f);
-        paddleLeft.transform.localScale = new Vector3(0.5f, 2f, 1f);
+        // triple the paddle size
+        paddleLeft.transform.localScale = new Vector3(0.5f * 3f, 2f * 3f, 1f);
         paddleLeft.AddComponent<BoxCollider2D>();
         var rbL = paddleLeft.AddComponent<Rigidbody2D>();
         rbL.bodyType = RigidbodyType2D.Kinematic;
@@ -46,7 +47,8 @@ public class PongSceneBuilder
         srR.sprite = sprite;
         srR.color = Color.white;
         paddleRight.transform.position = new Vector3(8f, 0f, 0f);
-        paddleRight.transform.localScale = new Vector3(0.5f, 2f, 1f);
+        // triple the paddle size
+        paddleRight.transform.localScale = new Vector3(0.5f * 3f, 2f * 3f, 1f);
         paddleRight.AddComponent<BoxCollider2D>();
         var rbR = paddleRight.AddComponent<Rigidbody2D>();
         rbR.bodyType = RigidbodyType2D.Kinematic;
@@ -149,11 +151,96 @@ public class PongSceneBuilder
         helpRRT.anchoredPosition = Vector2.zero;
         helpRRT.sizeDelta = new Vector2(100, 30);
 
+        // Center countdown text (hidden initially)
+        var countdownGO = new GameObject("CountdownText");
+        countdownGO.transform.SetParent(canvasGO.transform);
+        var countdownText = countdownGO.AddComponent<Text>();
+        countdownText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        countdownText.text = "";
+        countdownText.alignment = TextAnchor.MiddleCenter;
+        countdownText.fontSize = 48;
+        countdownText.color = Color.white;
+        countdownText.gameObject.SetActive(false);
+        var ctRT = countdownText.GetComponent<RectTransform>();
+        ctRT.anchorMin = new Vector2(0.5f, 0.5f);
+        ctRT.anchorMax = ctRT.anchorMin;
+        ctRT.anchoredPosition = Vector2.zero;
+        ctRT.sizeDelta = new Vector2(200, 100);
+
         // UIManager
         var uiGO = new GameObject("UIManager");
         var uiManager = uiGO.AddComponent<UIManager>();
         uiManager.leftScoreText = leftText;
         uiManager.rightScoreText = rightText;
+        uiManager.countdownText = countdownText;
+
+        // Winner texts (hidden initially)
+        var winnerLeftGO = new GameObject("WinnerLeftText");
+        winnerLeftGO.transform.SetParent(canvasGO.transform);
+        var winnerLeft = winnerLeftGO.AddComponent<Text>();
+        winnerLeft.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        winnerLeft.text = "";
+        winnerLeft.alignment = TextAnchor.MiddleCenter;
+        winnerLeft.fontSize = 64;
+        winnerLeft.color = Color.yellow;
+        winnerLeft.gameObject.SetActive(false);
+        var wlRT = winnerLeft.GetComponent<RectTransform>();
+        wlRT.anchorMin = new Vector2(0.25f, 0.6f);
+        wlRT.anchorMax = wlRT.anchorMin;
+        wlRT.anchoredPosition = Vector2.zero;
+        wlRT.sizeDelta = new Vector2(300, 120);
+
+        var winnerRightGO = new GameObject("WinnerRightText");
+        winnerRightGO.transform.SetParent(canvasGO.transform);
+        var winnerRight = winnerRightGO.AddComponent<Text>();
+        winnerRight.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        winnerRight.text = "";
+        winnerRight.alignment = TextAnchor.MiddleCenter;
+        winnerRight.fontSize = 64;
+        winnerRight.color = Color.yellow;
+        winnerRight.gameObject.SetActive(false);
+        var wrRT = winnerRight.GetComponent<RectTransform>();
+        wrRT.anchorMin = new Vector2(0.75f, 0.6f);
+        wrRT.anchorMax = wrRT.anchorMin;
+        wrRT.anchoredPosition = Vector2.zero;
+        wrRT.sizeDelta = new Vector2(300, 120);
+
+        // Play again prompts
+        var playLeftGO = new GameObject("PlayAgainLeftText");
+        playLeftGO.transform.SetParent(canvasGO.transform);
+        var playLeft = playLeftGO.AddComponent<Text>();
+        playLeft.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        playLeft.text = "";
+        playLeft.alignment = TextAnchor.MiddleCenter;
+        playLeft.fontSize = 22;
+        playLeft.color = Color.white;
+        playLeft.gameObject.SetActive(false);
+        var plRT = playLeft.GetComponent<RectTransform>();
+        plRT.anchorMin = new Vector2(0.25f, 0.45f);
+        plRT.anchorMax = plRT.anchorMin;
+        plRT.anchoredPosition = Vector2.zero;
+        plRT.sizeDelta = new Vector2(200, 40);
+
+        var playRightGO = new GameObject("PlayAgainRightText");
+        playRightGO.transform.SetParent(canvasGO.transform);
+        var playRight = playRightGO.AddComponent<Text>();
+        playRight.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        playRight.text = "";
+        playRight.alignment = TextAnchor.MiddleCenter;
+        playRight.fontSize = 22;
+        playRight.color = Color.white;
+        playRight.gameObject.SetActive(false);
+        var prRT = playRight.GetComponent<RectTransform>();
+        prRT.anchorMin = new Vector2(0.75f, 0.45f);
+        prRT.anchorMax = prRT.anchorMin;
+        prRT.anchoredPosition = Vector2.zero;
+        prRT.sizeDelta = new Vector2(200, 40);
+
+        // Assign to UIManager
+        uiManager.winnerLeftText = winnerLeft;
+        uiManager.winnerRightText = winnerRight;
+        uiManager.playAgainLeftText = playLeft;
+        uiManager.playAgainRightText = playRight;
 
         // GameManager
         var gmGO = new GameObject("GameManager");
