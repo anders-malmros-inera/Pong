@@ -1,6 +1,5 @@
 using UnityEngine;
-// Input System support (fallbacks to legacy Input if not available at runtime)
-using UnityEngine.InputSystem;
+// Use legacy Input API to avoid compile-time dependency on the Input System package.
 
 [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D))]
 public class Paddle : MonoBehaviour
@@ -99,30 +98,14 @@ public class Paddle : MonoBehaviour
     // Cross-compatible key check: prefer Input System if available, otherwise use legacy Input
     bool IsPressed(KeyCode key)
     {
-        // If Input System package is present and a keyboard is available, use it.
-        var keyboard = Keyboard.current;
-        if (keyboard != null)
-        {
-            switch (key)
-            {
-                case KeyCode.W: return keyboard.wKey.isPressed;
-                case KeyCode.S: return keyboard.sKey.isPressed;
-                case KeyCode.P: return keyboard.pKey.isPressed;
-                case KeyCode.L: return keyboard.lKey.isPressed;
-                case KeyCode.UpArrow: return keyboard.upArrowKey.isPressed;
-                case KeyCode.DownArrow: return keyboard.downArrowKey.isPressed;
-                default: return false;
-            }
-        }
-
-        // Fallback to legacy Input (works when old system active)
+        // Always use legacy Input.GetKey with a safe try/catch fallback so this compiles
+        // even when the new Input System package is not present.
         try
         {
             return Input.GetKey(key);
         }
         catch (System.InvalidOperationException)
         {
-            // If legacy Input is not allowed (Input System active), just return false here.
             return false;
         }
     }

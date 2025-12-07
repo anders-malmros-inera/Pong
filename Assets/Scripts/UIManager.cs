@@ -1,92 +1,108 @@
+using System.Collections;
+using System.Reflection;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
-    public Text leftScoreText;
-    public Text rightScoreText;
-    public Text countdownText;
-    public Text winnerLeftText;
-    public Text winnerRightText;
-    public Text playAgainLeftText;
-    public Text playAgainRightText;
+    // Use GameObjects for UI so we don't require the uGUI assembly to compile.
+    public GameObject leftScoreObj;
+    public GameObject rightScoreObj;
+    public GameObject countdownObj;
+    public GameObject winnerLeftObj;
+    public GameObject winnerRightObj;
+    public GameObject playAgainLeftObj;
+    public GameObject playAgainRightObj;
+
+    void SetTextOn(GameObject go, string text)
+    {
+        if (go == null) return;
+        var comp = go.GetComponent("Text");
+        if (comp == null) return;
+        var prop = comp.GetType().GetProperty("text");
+        if (prop != null) prop.SetValue(comp, text, null);
+    }
+
+    void SetColorOn(GameObject go, Color c)
+    {
+        if (go == null) return;
+        var comp = go.GetComponent("Text");
+        if (comp == null) return;
+        var prop = comp.GetType().GetProperty("color");
+        if (prop != null) prop.SetValue(comp, c, null);
+    }
+
+    void SetActiveObj(GameObject go, bool active)
+    {
+        if (go == null) return;
+        go.SetActive(active);
+    }
 
     public void UpdateScore(int left, int right)
     {
-        if (leftScoreText != null) leftScoreText.text = left.ToString();
-        if (rightScoreText != null) rightScoreText.text = right.ToString();
+        SetTextOn(leftScoreObj, left.ToString());
+        SetTextOn(rightScoreObj, right.ToString());
     }
 
-    public System.Collections.IEnumerator ShowCountdown(float seconds)
+    public IEnumerator ShowCountdown(float seconds)
     {
-        if (countdownText == null)
-            yield break;
-
-        countdownText.gameObject.SetActive(true);
-
+        if (countdownObj == null) yield break;
+        SetActiveObj(countdownObj, true);
         int remaining = Mathf.CeilToInt(seconds);
         while (remaining > 0)
         {
-            countdownText.text = remaining.ToString();
+            SetTextOn(countdownObj, remaining.ToString());
             yield return new WaitForSeconds(1f);
             remaining--;
         }
-
-        // hide when reaches 0
-        countdownText.gameObject.SetActive(false);
+        SetActiveObj(countdownObj, false);
     }
 
     public void ShowWinner(int playerIndex)
     {
         HideAllPrompts();
-        if (playerIndex == 0 && winnerLeftText != null)
+        if (playerIndex == 0)
         {
-            winnerLeftText.gameObject.SetActive(true);
-            winnerLeftText.text = "WINNER!";
+            SetActiveObj(winnerLeftObj, true);
+            SetTextOn(winnerLeftObj, "WINNER!");
         }
-        else if (playerIndex == 1 && winnerRightText != null)
+        else
         {
-            winnerRightText.gameObject.SetActive(true);
-            winnerRightText.text = "WINNER!";
+            SetActiveObj(winnerRightObj, true);
+            SetTextOn(winnerRightObj, "WINNER!");
         }
     }
 
     public void ShowPlayAgainPrompts()
     {
-        if (playAgainLeftText != null)
-        {
-            playAgainLeftText.gameObject.SetActive(true);
-            playAgainLeftText.text = "Play Again? (W)";
-            playAgainLeftText.color = Color.white;
-        }
-        if (playAgainRightText != null)
-        {
-            playAgainRightText.gameObject.SetActive(true);
-            playAgainRightText.text = "Play Again? (P)";
-            playAgainRightText.color = Color.white;
-        }
+        SetActiveObj(playAgainLeftObj, true);
+        SetTextOn(playAgainLeftObj, "Play Again? (W)");
+        SetColorOn(playAgainLeftObj, Color.white);
+
+        SetActiveObj(playAgainRightObj, true);
+        SetTextOn(playAgainRightObj, "Play Again? (P)");
+        SetColorOn(playAgainRightObj, Color.white);
     }
 
     public void SetPlayAccepted(int playerIndex, bool accepted)
     {
-        if (playerIndex == 0 && playAgainLeftText != null)
+        if (playerIndex == 0)
         {
-            playAgainLeftText.text = accepted ? "Accepted" : "Play Again? (W)";
-            playAgainLeftText.color = accepted ? Color.green : Color.white;
+            SetTextOn(playAgainLeftObj, accepted ? "Accepted" : "Play Again? (W)");
+            SetColorOn(playAgainLeftObj, accepted ? Color.green : Color.white);
         }
-        else if (playerIndex == 1 && playAgainRightText != null)
+        else
         {
-            playAgainRightText.text = accepted ? "Accepted" : "Play Again? (P)";
-            playAgainRightText.color = accepted ? Color.green : Color.white;
+            SetTextOn(playAgainRightObj, accepted ? "Accepted" : "Play Again? (P)");
+            SetColorOn(playAgainRightObj, accepted ? Color.green : Color.white);
         }
     }
 
     public void HideAllPrompts()
     {
-        if (winnerLeftText != null) winnerLeftText.gameObject.SetActive(false);
-        if (winnerRightText != null) winnerRightText.gameObject.SetActive(false);
-        if (playAgainLeftText != null) playAgainLeftText.gameObject.SetActive(false);
-        if (playAgainRightText != null) playAgainRightText.gameObject.SetActive(false);
-        if (countdownText != null) countdownText.gameObject.SetActive(false);
+        SetActiveObj(winnerLeftObj, false);
+        SetActiveObj(winnerRightObj, false);
+        SetActiveObj(playAgainLeftObj, false);
+        SetActiveObj(playAgainRightObj, false);
+        SetActiveObj(countdownObj, false);
     }
 }

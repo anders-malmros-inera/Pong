@@ -45,18 +45,8 @@ public class GameManager : MonoBehaviour
 
     bool IsKeyDown(KeyCode key)
     {
-        // Prefer new Input System if present
-        var keyboard = UnityEngine.InputSystem.Keyboard.current;
-        if (keyboard != null)
-        {
-            switch (key)
-            {
-                case KeyCode.W: return keyboard.wKey.wasPressedThisFrame;
-                case KeyCode.P: return keyboard.pKey.wasPressedThisFrame;
-                default: return false;
-            }
-        }
-
+        // Use legacy Input.GetKeyDown with safe fallback so compilation doesn't require
+        // the new Input System package.
         try
         {
             return Input.GetKeyDown(key);
