@@ -22,29 +22,60 @@ public class PongSceneBuilder
         camGO.tag = "MainCamera";
 
         // Top and bottom walls so the ball bounces off the screen edges
-        // Use the camera orthographic size to place walls slightly inside the vertical bounds
-        float camHeight = cam.orthographicSize;
+        // Compute playfield extents from the camera
         float inset = 0.25f; // place walls slightly inside so the ball remains visible when bouncing
-        float wallY = camHeight - inset;
+        float fullWidth = cam.orthographicSize * 2f * cam.aspect;
+        float wallThickness = 0.5f;
+        float wallY = cam.orthographicSize - inset - (wallThickness * 0.5f);
 
-        // Top wall
+        // Top wall (physical collider)
         var topWall = new GameObject("TopWall");
         var topCol = topWall.AddComponent<BoxCollider2D>();
-        topCol.size = new Vector2(100f, 0.5f);
+        topCol.size = new Vector2(fullWidth + 1f, wallThickness);
         topWall.transform.position = new Vector3(0f, wallY, 0f);
         var topRb = topWall.AddComponent<Rigidbody2D>();
         topRb.bodyType = RigidbodyType2D.Static;
         EnsureTagExists("Wall");
         topWall.tag = "Wall";
 
-        // Bottom wall
+        // Visual for top wall (3D cue)
+        var topVis = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Object.DestroyImmediate(topVis.GetComponent<Collider>());
+        topVis.name = "TopWall_Vis";
+        topVis.transform.SetParent(topWall.transform, false);
+        topVis.transform.localPosition = Vector3.zero;
+        topVis.transform.localScale = new Vector3(fullWidth + 1f, wallThickness, 0.5f);
+        var topVR = topVis.GetComponent<MeshRenderer>();
+        if (topVR != null)
+        {
+            var m = new Material(Shader.Find("Standard"));
+            m.color = Color.grey;
+            topVR.sharedMaterial = m;
+        }
+
+        // Bottom wall (physical collider)
         var bottomWall = new GameObject("BottomWall");
         var bottomCol = bottomWall.AddComponent<BoxCollider2D>();
-        bottomCol.size = new Vector2(100f, 0.5f);
+        bottomCol.size = new Vector2(fullWidth + 1f, wallThickness);
         bottomWall.transform.position = new Vector3(0f, -wallY, 0f);
         var bottomRb = bottomWall.AddComponent<Rigidbody2D>();
         bottomRb.bodyType = RigidbodyType2D.Static;
         bottomWall.tag = "Wall";
+
+        // Visual for bottom wall (3D cue)
+        var bottomVis = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Object.DestroyImmediate(bottomVis.GetComponent<Collider>());
+        bottomVis.name = "BottomWall_Vis";
+        bottomVis.transform.SetParent(bottomWall.transform, false);
+        bottomVis.transform.localPosition = Vector3.zero;
+        bottomVis.transform.localScale = new Vector3(fullWidth + 1f, wallThickness, 0.5f);
+        var bottomVR = bottomVis.GetComponent<MeshRenderer>();
+        if (bottomVR != null)
+        {
+            var m = new Material(Shader.Find("Standard"));
+            m.color = Color.grey;
+            bottomVR.sharedMaterial = m;
+        }
 
         // Helper sprite (builtin UI sprite)
         Sprite sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
@@ -83,7 +114,12 @@ public class PongSceneBuilder
         leftVis.transform.localRotation = Quaternion.Euler(10f, 20f, 0f);
         leftVis.transform.localScale = new Vector3(paddleWidth, paddleHeight, paddleVisualDepth);
         var leftR = leftVis.GetComponent<MeshRenderer>();
-        if (leftR != null) leftR.material.color = Color.cyan;
+        if (leftR != null)
+        {
+            var m = new Material(Shader.Find("Standard"));
+            m.color = Color.cyan;
+            leftR.sharedMaterial = m;
+        }
 
         // Right Paddle
         var paddleRight = new GameObject("PaddleRight");
@@ -111,7 +147,12 @@ public class PongSceneBuilder
         rightVis.transform.localRotation = Quaternion.Euler(10f, -20f, 0f);
         rightVis.transform.localScale = new Vector3(paddleWidth, paddleHeight, paddleVisualDepth);
         var rightR = rightVis.GetComponent<MeshRenderer>();
-        if (rightR != null) rightR.material.color = Color.magenta;
+        if (rightR != null)
+        {
+            var m = new Material(Shader.Find("Standard"));
+            m.color = Color.magenta;
+            rightR.sharedMaterial = m;
+        }
 
         // Ball
         var ballGO = new GameObject("Ball");
@@ -134,7 +175,12 @@ public class PongSceneBuilder
         ballVis.transform.localPosition = new Vector3(0f, 0f, -0.25f);
         ballVis.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
         var ballR = ballVis.GetComponent<MeshRenderer>();
-        if (ballR != null) ballR.material.color = Color.white;
+        if (ballR != null)
+        {
+            var m = new Material(Shader.Find("Standard"));
+            m.color = Color.white;
+            ballR.sharedMaterial = m;
+        }
 
         // Goals
         var goalLeft = new GameObject("GoalLeft");
@@ -169,7 +215,8 @@ public class PongSceneBuilder
         leftText.alignment = TextAnchor.UpperLeft;
         leftText.fontSize = 32;
         var rtL = leftText.GetComponent<RectTransform>();
-        rtL.anchorMin = new Vector2(0.25f, 0.95f);
+        // move scores slightly inward so top/bottom wall visuals don't overlap
+        rtL.anchorMin = new Vector2(0.35f, 0.92f);
         rtL.anchorMax = rtL.anchorMin;
         rtL.anchoredPosition = Vector2.zero;
         rtL.sizeDelta = new Vector2(100, 50);
@@ -183,7 +230,7 @@ public class PongSceneBuilder
         rightText.alignment = TextAnchor.UpperRight;
         rightText.fontSize = 32;
         var rtR = rightText.GetComponent<RectTransform>();
-        rtR.anchorMin = new Vector2(0.75f, 0.95f);
+        rtR.anchorMin = new Vector2(0.65f, 0.92f);
         rtR.anchorMax = rtR.anchorMin;
         rtR.anchoredPosition = Vector2.zero;
         rtR.sizeDelta = new Vector2(100, 50);
@@ -198,7 +245,8 @@ public class PongSceneBuilder
         leftHelp.fontSize = 18;
         leftHelp.color = Color.gray;
         var helpLRT = leftHelp.GetComponent<RectTransform>();
-        helpLRT.anchorMin = new Vector2(0.1f, 0.5f);
+        // move help texts slightly inward from screen edges
+        helpLRT.anchorMin = new Vector2(0.18f, 0.5f);
         helpLRT.anchorMax = helpLRT.anchorMin;
         helpLRT.anchoredPosition = Vector2.zero;
         helpLRT.sizeDelta = new Vector2(100, 30);
@@ -212,7 +260,7 @@ public class PongSceneBuilder
         rightHelp.fontSize = 18;
         rightHelp.color = Color.gray;
         var helpRRT = rightHelp.GetComponent<RectTransform>();
-        helpRRT.anchorMin = new Vector2(0.9f, 0.5f);
+        helpRRT.anchorMin = new Vector2(0.82f, 0.5f);
         helpRRT.anchorMax = helpRRT.anchorMin;
         helpRRT.anchoredPosition = Vector2.zero;
         helpRRT.sizeDelta = new Vector2(100, 30);

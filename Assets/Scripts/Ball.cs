@@ -81,9 +81,18 @@ public class Ball : MonoBehaviour
 
         if (collision.gameObject.CompareTag("Wall"))
         {
-            // perfect mirror reflection for walls; increase speed slightly after bounce
-            mag *= 1.05f;
-            rb.linearVelocity = reflected * mag;
+            // Use full-velocity reflect to preserve exact incident angle and magnitude,
+            // then increase speed slightly (5%) so bounces speed up.
+            Vector2 reflectedFull = Vector2.Reflect(inVel, contact.normal);
+            // If the reflected vertical component is effectively zero, nudge it slightly
+            // so the ball will not continue perfectly horizontal after a wall hit.
+            if (Mathf.Abs(reflectedFull.y) < 0.01f)
+            {
+                // Nudge away from the wall depending on which wall was hit
+                float nudge = 0.2f * (contact.normal.y > 0f ? 1f : -1f);
+                reflectedFull.y = nudge;
+            }
+            rb.linearVelocity = reflectedFull.normalized * (mag * 1.05f);
         }
         else
         {
